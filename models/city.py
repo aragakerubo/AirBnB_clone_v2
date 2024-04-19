@@ -11,7 +11,7 @@ class City(BaseModel, Base):
     __tablename__ = "cities"
     name = Column(String(128), nullable=False)
     state_id = Column(String(60), ForeignKey("states.id"), nullable=False)
-    state = relationship("State", back_populates="cities")
+    state = relationship("State", backref="cities")
 
     def __init__(self, *args, **kwargs):
         """initializes City"""
