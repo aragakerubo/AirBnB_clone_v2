@@ -39,15 +39,16 @@ class DBStorage:
         classes = [User, State, City, Place, Amenity, Review]
         new_dict = {}
         if cls:
-            if type(cls) == str:
+            if isinstance(cls, str):
                 cls = eval(cls)
-            for key, val in self.__session.query(cls).all():
-                new_dict[key] = val
+            for obj in self.__session.query(cls):
+                key = "{}.{}".format(type(obj).__name__, obj.id)
+                new_dict[key] = obj
         else:
             for c in classes:
-                for key, val in self.__session.query(c).all():
-                    new_dict[key] = val
-        return new_dict
+                for obj in self.__session.query(c):
+                    key = "{}.{}".format(type(obj).__name__, obj.id)
+                    new_dict[key] = obj
 
     def new(self, obj):
         """Adds new object to storage"""
