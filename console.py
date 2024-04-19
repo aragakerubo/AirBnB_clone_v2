@@ -123,6 +123,25 @@ class HBNBCommand(cmd.Cmd):
         """Overrides the emptyline method of CMD"""
         pass
 
+    def _key_value_parser(self, args):
+        """Creates a dictionary from a list of key value pairs"""
+        new_dict = {}
+        for arg in args:
+            if "=" in arg:
+                key, value = arg.split("=")
+                if value[0] == '"' and value[-1] == '"':
+                    value = value[1:-1]
+                else:
+                    try:
+                        value = int(value)
+                    except ValueError:
+                        try:
+                            value = float(value)
+                        except ValueError:
+                            continue
+                new_dict[key] = value
+        return new_dict
+
     def do_create(self, args):
         """Method to create a new object"""
         args_list = args.split(" ")
@@ -134,8 +153,8 @@ class HBNBCommand(cmd.Cmd):
             print("** class doesn't exist **")
             return
 
-        print(args_list)
-        new_instance = HBNBCommand.classes[args_list[0]]()
+        new_dict = self._key_value_parser(args_list[1:])
+        new_instance = HBNBCommand.classes[args_list[0]](**new_dict)
         new_instance.save()
 
         print(new_instance.id)
