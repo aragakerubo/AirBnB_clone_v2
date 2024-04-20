@@ -38,16 +38,12 @@ class DBStorage:
         """Returns a dictionary of models currently in storage"""
         classes = [User, State, City, Place, Amenity, Review]
         new_dict = {}
-        if cls:
-            if isinstance(cls, str):
-                cls = eval(cls)
-            for obj in self.__session.query(cls):
-                key = "{}.{}".format(obj.__class__.__name__, obj.id)
-                new_dict[key] = obj
-        else:
-            for c in classes:
-                for obj in self.__session.query(c):
-                    key = "{}.{}".format(obj.__class__.__name__, obj.id)
+
+        for c in classes:
+            if cls is None or cls is c or cls is c.__name__:
+                objs = self.__session.query(c).all()
+                for obj in objs:
+                    key = "{}.{}".format(type(obj).__name__, obj.id)
                     new_dict[key] = obj
         return new_dict
 
