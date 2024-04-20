@@ -36,16 +36,18 @@ class DBStorage:
 
     def all(self, cls=None):
         """Returns a dictionary of models currently in storage"""
-        classes = [User, State, City, Place, Amenity, Review]
-        new_dict = {}
-
-        for c in classes:
-            if cls is None or cls is c or cls is c.__name__:
-                objs = self.__session.query(c).all()
-                for obj in objs:
-                    key = "{}.{}".format(type(obj).__name__, obj.id)
-                    new_dict[key] = obj
-        return new_dict
+        if cls is None:
+            objs = self.__session.query(State).all()
+            objs.extend(self.__session.query(City).all())
+            objs.extend(self.__session.query(User).all())
+            objs.extend(self.__session.query(Place).all())
+            objs.extend(self.__session.query(Review).all())
+            objs.extend(self.__session.query(Amenity).all())
+        else:
+            if type(cls) == str:
+                cls = eval(cls)
+            objs = self.__session.query(cls)
+        return {"{}.{}".format(type(o).__name__, o.id): o for o in objs}
 
     def new(self, obj):
         """Adds new object to storage"""
