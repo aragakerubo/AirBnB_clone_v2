@@ -49,6 +49,7 @@ class DBStorage:
                 for obj in self.__session.query(c):
                     key = "{}.{}".format(type(obj).__name__, obj.id)
                     new_dict[key] = obj
+        return new_dict
 
     def new(self, obj):
         """Adds new object to storage"""
