@@ -130,7 +130,7 @@ class HBNBCommand(cmd.Cmd):
             if "=" in arg:
                 key, value = arg.split("=")
                 if value[0] == '"' and value[-1] == '"':
-                    value = value[1:-1].replace("_", " ")
+                    value = value[1:-1]
                 else:
                     try:
                         value = int(value)
