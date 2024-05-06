@@ -20,7 +20,7 @@ from os.path import exists
 
 env.hosts = ["34.232.69.100", "100.26.173.88"]
 env.user = "ubuntu"
-env.key_filename = "~/.ssh/holberton"
+env.key_filename = "~/id_rsa"
 
 
 def do_deploy(archive_path):
