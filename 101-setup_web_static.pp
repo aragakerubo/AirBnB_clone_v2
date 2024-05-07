@@ -24,17 +24,42 @@ class webserver {
     content => "<!DOCTYPE html><html><body><h1>Welcome to hbnb_static</h1></body></html>",
   }
 
-  # Configure Nginx
-  file { '/etc/nginx/sites-available/hbnb_static':
+  # Configure Nginx site for static content
+  file { '/etc/nginx/sites-available/default':
     ensure => file,
-    source => 'templates/hbnb_static.conf.erb',
+    content => "server {
+        listen 80;
+        listen [::]:80 default_server;
+        add_header X-Served-By 404031-web-01;
+
+        location /hbnb_static/ {
+            alias /data/web_static/current/;
+        }
+
+
+        root   /var/www/html/;
+        index  index.html index.htm;
+
+        location /redirect_me {
+            return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;
+        }
+
+
+        error_page 404 /404.html;
+        location /404 {
+            root /var/www/html/;
+            internal;
+        }
+
+    }",
   }
 
-  # Include template for Nginx configuration
-  file { 'templates/hbnb_static.conf.erb':
-    ensure => present,
-    source => '/path/to/your/hbnb_static.conf.erb',  # Replace with actual template path
+  # Create symbolic link to current release
+  file { '/data/web_static/current':
+    ensure => link,
+    target => '/data/web_static/releases/test',
   }
+  
 
   # Service definition for Nginx
   service { 'nginx':
