@@ -1,74 +1,29 @@
 # Script that sets up your web servers for the deployment of web_static.
-# Define a class for web server setup
-class webserver {
-
-  # Install Nginx package
-  package { 'nginx': ensure => installed }
-
-  # Create directories with ownership
-  file { [
-    '/data',
-    '/data/web_static',
-    '/data/web_static/releases',
-    '/data/web_static/shared',
-  ]:
-    ensure => directory,
-    owner => 'ubuntu',
-    group => 'ubuntu',
-    mode => '0755',
-  }
-
-  # Create test release directory and index.html
-  file { '/data/web_static/releases/test/index.html':
-    ensure => file,
-    content => "<!DOCTYPE html><html><body><h1>Welcome to hbnb_static</h1></body></html>",
-  }
-
-  # Configure Nginx site for static content
-  file { '/etc/nginx/sites-available/default':
-    ensure => file,
-    content => "server {
-        listen 80;
-        listen [::]:80 default_server;
-        add_header X-Served-By 404031-web-01;
-
-        location /hbnb_static/ {
-            alias /data/web_static/current/;
-        }
-
-
-        root   /var/www/html/;
-        index  index.html index.htm;
-
-        location /redirect_me {
-            return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;
-        }
-
-
-        error_page 404 /404.html;
-        location /404 {
-            root /var/www/html/;
-            internal;
-        }
-
-    }",
-  }
-
-  # Create symbolic link to current release
-  file { '/data/web_static/current':
-    ensure => link,
-    target => '/data/web_static/releases/test',
-  }
-  
-
-  # Service definition for Nginx
-  service { 'nginx':
-    ensure => running,
-    enable => true,
-  }
+# puppet manifest preparing a server for static content deployment
+exec { 'Update server':
+  command => '/usr/bin/env apt-get -y update',
 }
-
-# Apply the class to the node (assuming this manifest is included in a site.pp)
-node default {
-  include webserver
+-> exec {'Install NGINX':
+  command => '/usr/bin/env apt-get -y install nginx',
+}
+-> exec {'Creates directory release/test':
+  command => '/usr/bin/env mkdir -p /data/web_static/releases/test/',
+}
+-> exec {'Creates directories shared':
+  command => '/usr/bin/env mkdir -p /data/web_static/shared/',
+}
+-> exec {'Write Hello World in index with tee command':
+  command => '/usr/bin/env echo "Hello Wolrd Puppet" | sudo tee /data/web_static/releases/test/index.html',
+}
+-> exec {'Create Symbolic link':
+  command => '/usr/bin/env ln -sf /data/web_static/releases/test /data/web_static/current',
+}
+-> exec {'Change owner and group like ubuntu':
+  command => '/usr/bin/env chown -R ubuntu:ubuntu /data',
+}
+-> exec {'Add new configuration to NGINX':
+  command => '/usr/bin/env sed -i "/listen 80 default_server;/a location /hbnb_static/ { alias /data/web_static/current/;}" /etc/nginx/sites-available/default',
+}
+-> exec {'Restart NGINX':
+  command => '/usr/bin/env service nginx restart',
 }

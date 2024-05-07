@@ -4,59 +4,87 @@ Fabric script that distributes an archive to your web servers
 """
 
 
-from fabric.api import env, local, run, put
+from fabric.context_managers import (
+    cd,
+    hide,
+    settings,
+    show,
+    path,
+    prefix,
+    lcd,
+    quiet,
+    warn_only,
+    remote_tunnel,
+    shell_env,
+)
+from fabric.decorators import (
+    hosts,
+    roles,
+    runs_once,
+    with_settings,
+    task,
+    serial,
+    parallel,
+)
+from fabric.operations import (
+    require,
+    prompt,
+    put,
+    get,
+    run,
+    sudo,
+    local,
+    reboot,
+    open_shell,
+)
+from fabric.state import env, output
+from fabric.utils import abort, warn, puts, fastprint
+from fabric.tasks import execute
 from datetime import datetime
-from os.path import exists, isdir
+import os
+import os.path
 
 env.hosts = ["34.232.69.100", "100.26.173.88"]
 
-
-def do_clean(number=0):
-    """deletes out-of-date archives"""
-    number = int(number)
-    if number < 2:
-        number = 1
-    else:
-        number += 1
-    local("ls -t versions | tail -n +{} | xargs rm".format(number))
-    run(
-        "ls -t /data/web_static/releases | tail -n +{} | xargs rm -rf".format(
-            number
-        )
-    )
+env.user = "ubuntu"
 
 
 def do_pack():
-    """generates a tgz archive"""
+    """function generates a tgz archive from the contents of
+    the web_static folder of the AirBnB clone
+    """
     try:
-        date = datetime.now().strftime("%Y%m%d%H%M%S")
-        if isdir("versions") is False:
-            local("mkdir versions")
-        file_name = "versions/web_static_{}.tgz".format(date)
-        local("tar -cvzf {} web_static".format(file_name))
-        return file_name
-    except:
+        my_time = datetime.now().strftime("%Y%m%d%H%M%S")
+        local("mkdir -p versions")
+        my_file = "versions/web_static_" + my_time + ".tgz"
+        local("tar -vzcf {} web_static".format(my_file))
+        return my_file
+    except Exception:
         return None
 
 
 def do_deploy(archive_path):
-    """distributes an archive to the web servers"""
-    if exists(archive_path) is False:
+    """function distrubtes an archive to my web servers"""
+    path_existence = os.path.exists(archive_path)
+    if path_existence is False:
         return False
     try:
-        file_n = archive_path.split("/")[-1]
-        no_ext = file_n.split(".")[0]
-        path = "/data/web_static/releases/"
+        path_split = archive_path.replace("/", " ").replace(".", " ").split()
+        just_directory = path_split[0]
+        no_tgz_name = path_split[1]
+        full_filename = path_split[1] + "." + path_split[2]
+        folder = "/data/web_static/releases/{}/".format(no_tgz_name)
         put(archive_path, "/tmp/")
-        run("mkdir -p {}{}/".format(path, no_ext))
-        run("tar -xzf /tmp/{} -C {}{}/".format(file_n, path, no_ext))
-        run("rm /tmp/{}".format(file_n))
-        run("mv {0}{1}/web_static/* {0}{1}/".format(path, no_ext))
-        run("rm -rf {}{}/web_static".format(path, no_ext))
-        run("rm -rf /data/web_static/current")
-        run("ln -s {}{}/ /data/web_static/current".format(path, no_ext))
+        run("mkdir -p {}".format(folder))
+        run("tar -xzf /tmp/{} -C {}/".format(full_filename, folder))
+        run("rm /tmp/{}".format(full_filename))
+        run("mv {}/web_static/* {}".format(folder, folder))
+        run("rm -rf {}/web_static".format(folder))
+        current = "/data/web_static/current"
+        run("rm -rf {}".format(current))
+        run("ln -s {}/ {}".format(folder, current))
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -66,3 +94,36 @@ def deploy():
     if archive_path is None:
         return False
     return do_deploy(archive_path)
+
+
+def local_clean(number=0):
+    """Local Clean"""
+    _list = local("ls -1t versions", capture=True)
+    _list = _list.split("\n")
+    n = int(number)
+    if n in (0, 1):
+        n = 1
+    print(len(_list[n:]))
+    for i in _list[n:]:
+        local("rm versions/" + i)
+
+
+def remote_clean(number=0):
+    """Remote Clean"""
+    _list = run("ls -1t /data/web_static/releases")
+    _list = _list.split("\r\n")
+    print(_list)
+    n = int(number)
+    if n in (0, 1):
+        n = 1
+    print(len(_list[n:]))
+    for i in _list[n:]:
+        if i is "test":
+            continue
+        run("rm -rf /data/web_static/releases/" + i)
+
+
+def do_clean(number=0):
+    """Fabric script that deletes aout of dates archives"""
+    local_clean(number)
+    remote_clean(number)
